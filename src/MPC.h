@@ -9,6 +9,9 @@ using namespace std;
 class MPC {
  public:
   MPC();
+  // placeholder for the mpc x & y values
+  vector<double> xvals;
+  vector<double> yvals;
 
   virtual ~MPC();
 
