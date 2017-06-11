@@ -40,6 +40,22 @@ Since the autonomous vehicle deals with a trajectory which was mapped out throug
 In our simulator, we are given the trajectory in map coordinates which we will need to convert to car coordinates before fitting the 3rd degree polynomial.
 (see main.cpp line 100-120)
 
+a [simple way to convert the waypoints into car coordinates](https://cdn-enterprise.discourse.org/udacity/uploads/default/original/4X/3/0/f/30f3d149c4365d9c395ed6103ecf993038b3d318.png) into car coordinates is as follows
+
+```
+for (int i = 0; i < ptsx.size(); i++) {
+
+    double x_shifted = ptsx[i] - px;
+    double y_shifted = ptsy[i] - py;
+
+    points_x.push_back(x_shifted * cos(psi) + y_shifted * sin(psi));
+    points_y.push_back(- x_shifted * sin(psi) + y_shifted * cos(psi));
+
+}
+```
+ptsx and ptsy is waypoint locations in map coordinates
+
+
 Once we have a reference trajectory (from the fitted polynomial), our goal is to minimize the error between the reference trajectory and the vehicle’s actual path, which is done using a cost function.
 
 ### Cost Function:
@@ -88,8 +104,26 @@ In order to value smoothness error over all other errors, we multiply the smooth
 
 
 ----------
+### Latency:
 
-### Timestep Length, Elapsed Duration, and Latency:
+In order to account for latency, I computed the state vector so that it is looking at 100 ms in the future
+```
+const double Lf = 2.67;
+double dt = 0.1; // 100ms latency
+
+double future_x = v * dt; // since x is zero we only need to account for the latency
+double future_y = 0;
+double future_psi = -v * steering_angle / Lf * dt;
+double future_v = v + throttle * dt;  
+// Cross-track error is the difference between the trajectory and the vehicle.
+double cte = polyeval(poly_coeff, 0);
+// Orientation Error
+double epsi = -atan(poly_coeff(1));
+state << future_x, future_y, future_psi, future_v, cte, epsi;
+```
+
+-------------
+### Timestep Length, Elapsed Duration:
 
 I chose the number of N as 10 and the number for dt as 0.05 (50 ms), since the product of N and dt will give us a half of a second into the horizon and given a reference speed of 30 mph and a latency of 100 ms, 500ms should be just right. I played around with many different values for N and dt (N in the range of [5, 25] and dt in the range of [0.001, 0.5] and found that N = 10 and dt = 0.05 is the most logical and performs best for a latancy of 100 ms).
 

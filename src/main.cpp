@@ -91,6 +91,8 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+		  double steering_angle = j[1]["steering_angle"];
+		  double throttle = j[1]["throttle"];
 
           /*
           * TODO: Calculate steeering angle and throttle using MPC.
@@ -120,12 +122,19 @@ int main() {
 
           // step 3) set the state vector
           Eigen::VectorXd state(6);
-          // Cross-track error is the difference between the trajectory and the vehicle (which is at location 0 ).
-          double cte = polyeval(poly_coeff, 0);
-          // Orientation Error
-          double epsi = -atan(poly_coeff(1));
-          // in car coordinate, px, py and psi will all be zero.
-          state << 0, 0, 0, v, cte, epsi;
+          
+		  const double Lf = 2.67;
+		  double dt = 0.1; // 100ms latency
+
+		  double future_x = v * dt; // since x is zero we only need to account for the latency
+		  double future_y = 0;
+		  double future_psi = -v * steering_angle / Lf * dt;
+		  double future_v = v + throttle * dt;  
+		  // Cross-track error is the difference between the trajectory and the vehicle.
+		  double cte = polyeval(poly_coeff, 0);
+		  // Orientation Error
+		  double epsi = -atan(poly_coeff(1));
+          state << future_x, future_y, future_psi, future_v, cte, epsi;
 
           // step 4) predict the next state
           auto vars = mpc.Solve(state, poly_coeff);
